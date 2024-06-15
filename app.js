@@ -9,15 +9,13 @@ const session = require("express-session")
 const flash = require("connect-flash")
 const passport = require("passport")
 require("./config/auth")(passport)
-const db = require("./config/db")
 require("./models/Usuario");
+require("./models/Produto")
 const Usuario = mongoose.model("usuarios");
-// require("./models/Postagem")
-// const Postagem = mongoose.model("postagens")
-//require("./models/Categoria")
-//const Categoria = mongoose.model("categorias")
-//const admin = require('./routes/admin')
-//const usuarios = require("./routes/usuario")
+const Produto = mongoose.model("produtos")
+const db = require("./config/db")
+const bcrypt = require("bcryptjs");
+
 
 
 //Configurações
@@ -55,3 +53,181 @@ const Usuario = mongoose.model("usuarios");
     });
 //public
     app.use(express.static(path.join(__dirname, "public")))
+
+
+//rotas
+
+app.get('/', (req, res) => {
+    res.render('index')
+});
+
+app.get("/registro", (req, res) => {
+    res.render("usuarios/registro");
+});
+
+app.post("/registro", (req, res)=>{
+    var erros = []
+
+    if(!req.body.nome || typeof req.body.nome == undefined || req.body.nome == null){
+        erros.push({texto:"Nome inválido"})
+    }
+    if(!req.body.email || typeof req.body.email == undefined || req.body.email == null){
+        erros.push({texto:"email inválido"})
+    }
+    if(!req.body.senha || typeof req.body.senha == undefined || req.body.senha == null){
+        erros.push({texto:"senha inválida"})
+    }
+    if(req.body.senha.length < 4){
+        erros.push({texto:"senha curta demais"})        
+    }
+    if(req.body.senha != req.body.senha2){        
+        erros.push({texto:"senhas diferentes"})
+    }
+    if(erros.length > 0){
+        res.render("usuarios/registro",{erros:erros})
+    }else{
+        Usuario.findOne({email:req.body.email}).then((usuario)=>{
+            if(usuario){
+                req.flash("error_msg", "ja existe uma conta com esse e-mail")
+                res.redirect("/registro")    
+            }else{
+                const novoUsuario = new Usuario({
+                    nome: req.body.nome,
+                    email: req.body.email,
+                    senha: req.body.senha
+                })
+                bcrypt.genSalt(10,(erro,salt)=>{
+                    bcrypt.hash(novoUsuario.senha, salt, (erro, hash)=>{
+                        if(erro){
+                            req.flash("error_msg", "houve um erro no salvamento do usuario")
+                            res.redirect('/')
+                        }
+                        novoUsuario.senha = hash
+                        novoUsuario.save().then(()=>{
+                            req.flash("success_msg", "Usuário salvo")
+                            res.redirect('/')
+                        }).catch((err)=>{
+                            req.flash("error_msg", "houve um erro no salvamento do usuario")
+                            res.redirect('/')
+                        })
+                    })
+                })
+            }
+        }).catch((err)=>{
+            req.flash("error_msg", "erro interno de achar usuario")
+        })
+    }
+})
+
+
+app.get("/login", (req, res)=>{
+    res.render("usuarios/login")
+})
+
+app.post("/login", (req, res,next)=>{
+    passport.authenticate("local",{
+        successRedirect: "/",
+        failureRedirect: "/login",
+        failureFlash: true
+    })(req,res,next)
+})
+
+app.get("/logout", (req, res)=>{
+    req.logout((err) => {
+        if (err) {
+            console.error(err);
+            return next(err);
+        }
+        req.flash("success_msg", "Deslogado");
+        res.redirect("/");
+    });
+});
+
+
+
+app.get('/produtos',(req, res)=>{
+    Produto.find().sort({date:'desc'}).lean().then((produtos)=>{
+        res.render("produtos/produtos", {produtos: produtos})
+    }).catch((err)=>{
+        req.flash("error_msg", "Houve um erro ao listar as categorias")
+    })    
+})
+
+app.get('/produtos/add',(req, res)=>{
+    res.render("produtos/addprodutos")
+})
+
+app.post("/produtos/novo", (req, res)=>{
+    var erros = []
+    if(!req.body.nome || typeof req.body.nome == undefined ||req.body.nome == null){
+        erros.push({ texto:"Nome inválido"})
+    }    
+    if(!req.body.peso || typeof req.body.peso == undefined || req.body.peso == null || req.body.peso < 0 ){
+        erros.push({ texto:"peso inválido"})
+    }
+    if(req.body.nome.length <2){
+        erros.push({ texto:"Nome do produto muito curto"})
+    }
+    if(erros.length >0){
+        res.render("produtos/addprodutos",{erros: erros})
+    }else{
+        const novoProduto = {
+            nome: req.body.nome,
+            peso: req.body.peso,
+            descricao: req.body.descricao
+        }    
+        new Produto(novoProduto).save().then(()=>{
+            req.flash("success_msg","produto salvo com sucesso")
+            res.redirect("/produtos"); // Redirect to avoid re-submitting the form on refresh
+        }).catch((err)=>{
+            req.flash("error_msg","erro ao salvar produto")
+            console.log("falha ao salvar produto"+ err)
+            res.redirect("/");
+        })
+    }    
+})
+
+app.post("/produtos/edit",(req,res)=>{
+    Produto.findOne({_id:req.body.id}).then((produto)=>{
+        produto.nome = req.body.nome
+        produto.descricao= req.body.descricao
+        produto.peso = req.body.peso
+        produto.save().then(()=>{
+            req.flash("success_msg", "Sucesso na edição")
+            res.redirect("/produtos")
+        }).catch((err)=>{
+            res.flash("error_msg", "merda na edição")
+            res.redirect("/produtos")
+        })
+
+    }).catch((err)=>{
+        req.flash("error_msg", "erro ao editar")
+        res.redirect("/produtos")
+    })    
+})
+
+app.get("/produtos/edit/:id",(req,res)=>{
+    Produto.findOne({_id:req.params.id}).lean().then((produto)=>{
+        res.render('produtos/editprodutos', {produto:produto})
+    }).catch((err)=>{
+        req.flash("error_msg", "esta produto não existe")
+        res.redirect("/produtos")
+    })    
+})
+
+app.post("/produtos/deletar",(req,res)=>{   
+    Produto.deleteOne({_id:req.body.id}).then(()=>{
+        req.flash("success_msg", "deletado com sucesso")
+        res.redirect("/produtos")
+    }).catch((err)=>{
+        req.flash("error_msg", "erro ao deletar produto")
+        res.redirect("/produtos")
+    })    
+})
+
+
+
+const PORT = process.env.PORT ||8081
+app.listen(PORT,()=>{
+    console.log("Servidor rodando na porta " + PORT);
+})
