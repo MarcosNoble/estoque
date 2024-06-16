@@ -171,9 +171,6 @@ app.post("/produtos/novo", (req, res)=>{
     if(!req.body.nome || typeof req.body.nome == undefined ||req.body.nome == null){
         erros.push({ texto:"Nome inválido"})
     }    
-    // if(!req.body.peso || typeof req.body.peso == undefined || req.body.peso == null || req.body.peso < 0 ){
-    //     erros.push({ texto:"peso inválido"})
-    // }
     if(req.body.nome.length <2){
         erros.push({ texto:"Nome do produto muito curto"})
     }
@@ -279,9 +276,8 @@ app.post("/categorias/nova", (req, res)=>{
     }    
 })
 
-
 app.get('/estoques', (req, res) => {
-    Estoque.find().populate('produto').populate('recebedor').sort({dataE: 'desc'}).lean().then((estoques) => {
+    Estoque.find({ retirado: 0 }).populate('produto').populate('recebedor').sort({dataE: 'desc'}).lean().then((estoques) => {
         res.render("estoques/estoques", {estoques: estoques});
     }).catch((err) => {
         req.flash("error_msg", "Houve um erro ao listar os produtos");
@@ -289,6 +285,18 @@ app.get('/estoques', (req, res) => {
         res.redirect('/');
     });
 });
+
+app.get('/retiradas', (req, res) => {
+    Estoque.find({ retirado: 1 }).populate('produto').populate('recebedor').sort({dataE: 'desc'}).lean().then((estoques) => {
+        res.render("estoques/retiradas", {estoques: estoques});
+    }).catch((err) => {
+        req.flash("error_msg", "Houve um erro ao listar os produtos");
+        console.log(err)
+        res.redirect('/');
+    });
+});
+
+
 
 app.get("/estoques/add", (req, res) => {
     Produto.find().lean().then((produtos) => {
@@ -298,7 +306,6 @@ app.get("/estoques/add", (req, res) => {
         res.redirect("/estoques");
     });
 });
-
 
 
 
@@ -352,9 +359,28 @@ app.post("/estoques/edit",(req,res)=>{
     Estoque.findOne({_id:req.body.id}).then((estoque)=>{
         estoque.quantidade = req.body.quantidade
         estoque.observacoes= req.body.observacoes
-        estoque.dataV= req.body.dataV
+        estoque.dataV = req.body.dataV || Date.now(); // Set to Date.now() if not provided        
         estoque.produto= req.body.produto
         estoque.recebedor = req.user ? req.user._id : null // ensure user is logged in
+        estoque.save().then(()=>{
+            req.flash("success_msg", "Sucesso na edição")
+            res.redirect("/estoques")
+        }).catch((err)=>{
+            res.flash("error_msg", "merda na edição")
+            res.redirect("/estoques")
+        })
+    }).catch((err)=>{
+        console.log(err)
+        req.flash("error_msg", "erro ao editar")
+        res.redirect("/estoques")
+    })    
+})
+
+app.post("/retiradas/retirar",(req,res)=>{
+    Estoque.findOne({_id:req.body.id}).then((estoque)=>{        
+        estoque.dataS= Date.now(),        
+        estoque.removedor = req.user ? req.user._id : null // ensure user is logged in
+        estoque.retirado = 1
         estoque.save().then(()=>{
             req.flash("success_msg", "Sucesso na edição")
             res.redirect("/estoques")
@@ -384,3 +410,15 @@ app.listen(PORT,()=>{
     console.log("Servidor rodando na porta " + PORT);
 })
 
+// document.addEventListener('DOMContentLoaded', (event) => {
+//     const deleteButton = document.querySelector('.btn-danger'); // Adjust the selector to your specific button
+
+//     deleteButton.addEventListener('click', function(e) {
+//         if (!this.hasAttribute('data-confirm')) {
+//             e.preventDefault(); // Prevent the form from submitting on first click
+//             this.setAttribute('data-confirm', 'true');
+//             this.textContent = 'Clique novamente para confirmar'; // Change the button text to prompt for a second click
+//         }
+//         // The form will submit on second click because 'data-confirm' attribute is now set
+//     });
+// });

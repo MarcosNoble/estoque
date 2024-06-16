@@ -12,6 +12,7 @@
                 <input  class="form-control" type="text" name="nome" id="nome" placeholder="Nome da categoria" value="{{produto.nome}}">
             <label for="descricao">Descrição: </label>
                 <input class="form-control" type="text" name="descricao" id="descricao" placeholder="Slug da categoria" value="{{produto.descricao}}">
+            <label for="categoria" class="mt-1">Categoria</label>
             <select name="categoria" class="form-select" >
                 {{#each categorias}}
                     <option value="{{_id}}">{{nome}}</option>

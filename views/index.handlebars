@@ -1,9 +1,15 @@
 <div class="bg-light p-5 rounded-lg m-3">
-  <h1 class="display-4">Um texto de boas vindas qualquer</h1>
-  <p class="lead">This is a simple hero unit, a simple jumbotron-style component for calling extra attention to featured content or information.</p>
-  <hr class="my-4">
-  <p>It uses utility classes for typography and spacing to space content out within the larger container.</p>
-  <a class="btn btn-primary btn-lg" href="#" role="button">Crie uma conta</a>
+  <h1 class="display-4">Controle de estoques</h1>
+  {{!-- <a class="btn btn-primary btn-lg" href="/registro" role="button">Crie uma conta</a><br> --}}
 </div>
 <hr>
 <h2>Postagens recentes</h2>
+
+{{#if user}}   
+  <a class="nav-link active" href="/estoques">Entradas</a>  
+  <a class="nav-link active" href="/retiradas">Retiradas</a>      
+  <a class="nav-link active" href="/categorias">Categorias</a>    
+  <a class="nav-link active" href="/produtos">Produtos</a>  
+{{else}}  
+  <a class="nav-link active" href="/login">Faça login para usar</a>  
+{{/if}} 
