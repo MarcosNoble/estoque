@@ -10,10 +10,10 @@ const Produto = new Schema({
         type: String,
         required: true
     },
-    peso: {
-        type: Number,
-        require: true
-    },
+    // peso: {
+    //     type: Number,
+    //     require: true
+    // },
     categoria: {
         type: Schema.Types.ObjectId,
         ref: "categorias",

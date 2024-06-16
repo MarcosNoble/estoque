@@ -8,10 +8,9 @@
     <div class="card mt-4">
         <div class="card-body">
             <h4>Nome: {{nome}}</h4>
-            <small>Descrição: {{descricao}}</small>
-            <br>
-            <small>Peso: {{peso}}</small>
-            <br>
+            <small>Descrição: {{descricao}}</small>   <br>         
+            {{!-- <small>Peso: {{peso}}</small><br> --}}
+            <small>Categoria: {{categoria.nome}}</small> <br>
             <a href="/produtos/edit/{{_id}}">
                 <button class="btn btn-success mt-4">Editar produto</button>
             </a>           

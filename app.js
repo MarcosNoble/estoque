@@ -12,11 +12,14 @@ require("./config/auth")(passport)
 require("./models/Usuario");
 require("./models/Produto")
 require("./models/Categoria")
+require("./models/Estoque")
 const Usuario = mongoose.model("usuarios");
 const Produto = mongoose.model("produtos")
 const Categoria = mongoose.model("categorias")
+const Estoque = mongoose.model("estoques")
 const db = require("./config/db")
 const bcrypt = require("bcryptjs");
+const {Logado} = require("./helpers/Logado")
 
 
 
@@ -59,7 +62,7 @@ const bcrypt = require("bcryptjs");
 
 
 //rotas
-
+//app.get('/',Logado, (req, res) => {
 app.get('/', (req, res) => {
     res.render('index')
 });
@@ -122,7 +125,6 @@ app.post("/registro", (req, res)=>{
     }
 })
 
-
 app.get("/login", (req, res)=>{
     res.render("usuarios/login")
 })
@@ -146,32 +148,17 @@ app.get("/logout", (req, res)=>{
     });
 });
 
-
-
-app.get('/produtos',(req, res)=>{
-    Produto.find().sort({nome:'desc'}).lean().then((produtos)=>{
-        res.render("produtos/produtos", {produtos: produtos})
-    }).catch((err)=>{
-        req.flash("error_msg", "Houve um erro ao listar as categorias")
-    })    
-})
-
-app.get("/test", (req, res) => {
-    
-    console.log("aqui")
-    const testCategorias = [
-        { _id: '1', nome: 'Categoria 1' },
-        { _id: '2', nome: 'Categoria 2' }
-    ];
-    console.log(testCategorias)
-    res.render("produtos/addprodutos", { categorias: testCategorias });
+app.get('/produtos', (req, res) => {
+    Produto.find().populate('categoria').sort({nome: 'desc'}).lean().then((produtos) => {
+        res.render("produtos/produtos", {produtos: produtos});
+    }).catch((err) => {
+        req.flash("error_msg", "Houve um erro ao listar os produtos");
+        res.redirect('/');
+    });
 });
 
-
 app.get("/produtos/add", (req, res) => {
-    console.log("aqui")
     Categoria.find().lean().then((categorias) => {
-        console.log(categorias)
         res.render("produtos/addprodutos", { categorias: categorias });
     }).catch((err) => {
         req.flash("error_msg", "Erro ao carregar o formulário de adição de produtos");
@@ -179,15 +166,14 @@ app.get("/produtos/add", (req, res) => {
     });
 });
 
-
 app.post("/produtos/novo", (req, res)=>{
     var erros = []
     if(!req.body.nome || typeof req.body.nome == undefined ||req.body.nome == null){
         erros.push({ texto:"Nome inválido"})
     }    
-    if(!req.body.peso || typeof req.body.peso == undefined || req.body.peso == null || req.body.peso < 0 ){
-        erros.push({ texto:"peso inválido"})
-    }
+    // if(!req.body.peso || typeof req.body.peso == undefined || req.body.peso == null || req.body.peso < 0 ){
+    //     erros.push({ texto:"peso inválido"})
+    // }
     if(req.body.nome.length <2){
         erros.push({ texto:"Nome do produto muito curto"})
     }
@@ -196,10 +182,9 @@ app.post("/produtos/novo", (req, res)=>{
     }else{
         const novoProduto = {
             nome: req.body.nome,
-            peso: req.body.peso,
+            // peso: req.body.peso,
             descricao: req.body.descricao,
             categoria: req.body.categoria
-
         }    
         new Produto(novoProduto).save().then(()=>{
             req.flash("success_msg","produto salvo com sucesso")
@@ -209,14 +194,14 @@ app.post("/produtos/novo", (req, res)=>{
             console.log("falha ao salvar produto"+ err)
             res.redirect("/");
         })
-    }    
+    }        
 })
 
 app.post("/produtos/edit",(req,res)=>{
     Produto.findOne({_id:req.body.id}).then((produto)=>{
         produto.nome = req.body.nome
         produto.descricao= req.body.descricao
-        produto.peso = req.body.peso
+        // produto.peso = req.body.peso
         produto.save().then(()=>{
             req.flash("success_msg", "Sucesso na edição")
             res.redirect("/produtos")
@@ -224,7 +209,6 @@ app.post("/produtos/edit",(req,res)=>{
             res.flash("error_msg", "merda na edição")
             res.redirect("/produtos")
         })
-
     }).catch((err)=>{
         req.flash("error_msg", "erro ao editar")
         res.redirect("/produtos")
@@ -249,8 +233,6 @@ app.post("/produtos/deletar",(req,res)=>{
         res.redirect("/produtos")
     })    
 })
-
-
 
 app.get('/categorias',(req, res)=>{
     Categoria.find().sort({date:'desc'}).lean().then((categorias)=>{
@@ -279,8 +261,7 @@ app.post("/categorias/nova", (req, res)=>{
     }else{
         const novaCategoria = {
             nome: req.body.nome
-        }
-    
+        }    
         new Categoria(novaCategoria).save().then(()=>{
             console.log("Categoria salva")
             req.flash("success_msg","categoria criada com sucesso")
@@ -290,14 +271,107 @@ app.post("/categorias/nova", (req, res)=>{
             console.log("falha ao salvar categoria"+ err)
             res.redirect("/");
         })
-    }
-
-    
+    }    
 })
 
 
+app.get('/estoques', (req, res) => {
+    Estoque.find().populate('produto','usuario').sort({dataE: 'desc'}).lean().then((estoques) => {
+        res.render("estoques/estoques", {estoques: estoques});
+    }).catch((err) => {
+        req.flash("error_msg", "Houve um erro ao listar os produtos");
+        console.log(err)
+        res.redirect('/');
+    });
+});
+
+app.get("/estoques/add", (req, res) => {
+    Produto.find().lean().then((produtos) => {
+        res.render("estoques/addestoque", { produtos: produtos });
+    }).catch((err) => {
+        req.flash("error_msg", "Erro ao carregar o formulário de adição de estoques");
+        res.redirect("/estoques");
+    });
+});
+
+
+
+
+app.post("/estoques/novo", (req, res)=>{
+    var erros = []
+    //não fiz validação de dados aqui, estas comentadas são de onde eu copiei esse codigo 
+    // if(!req.body.nome || typeof req.body.nome == undefined ||req.body.nome == null){
+    //     erros.push({ texto:"Nome inválido"})
+    // }        
+    // if(req.body.nome.length <2){
+    //     erros.push({ texto:"Nome do produto muito curto"})
+    // }
+    if(erros.length >0){
+        res.render("produtos/addprodutos",{erros: erros})
+    }else {
+        const novaEntrada = {
+            produto: req.body.produto,
+            quantidade: req.body.quantidade,
+            dataE: Date.now(),
+            observacoes: req.body.observacoes,
+            dataV: req.body.dataV,
+            recebedor: req.user ? req.user._id : null // ensure user is logged in
+        };    
+        new Estoque(novaEntrada).save().then(() => {
+            req.flash("success_msg", "entrada salva com sucesso");
+            res.redirect("/estoques"); // Redirect to avoid re-submitting the form on refresh
+        }).catch((err) => {
+            req.flash("error_msg", "erro ao salvar entrada");
+            console.log("falha ao salvar entrada"+ err);
+            res.redirect("/");
+        });
+    }        
+})
 
 const PORT = process.env.PORT ||8089
 app.listen(PORT,()=>{
     console.log("Servidor rodando na porta " + PORT);
 })
+
+///////////////
+
+
+
+
+// app.post("/produtos/edit",(req,res)=>{
+//     Produto.findOne({_id:req.body.id}).then((produto)=>{
+//         produto.nome = req.body.nome
+//         produto.descricao= req.body.descricao
+//         // produto.peso = req.body.peso
+//         produto.save().then(()=>{
+//             req.flash("success_msg", "Sucesso na edição")
+//             res.redirect("/produtos")
+//         }).catch((err)=>{
+//             res.flash("error_msg", "merda na edição")
+//             res.redirect("/produtos")
+//         })
+//     }).catch((err)=>{
+//         req.flash("error_msg", "erro ao editar")
+//         res.redirect("/produtos")
+//     })    
+// })
+
+// app.get("/produtos/edit/:id",(req,res)=>{
+//     Produto.findOne({_id:req.params.id}).lean().then((produto)=>{
+//         res.render('produtos/editprodutos', {produto:produto})
+//     }).catch((err)=>{
+//         req.flash("error_msg", "esta produto não existe")
+//         res.redirect("/produtos")
+//     })    
+// })
+
+// app.post("/produtos/deletar",(req,res)=>{   
+//     Produto.deleteOne({_id:req.body.id}).then(()=>{
+//         req.flash("success_msg", "deletado com sucesso")
+//         res.redirect("/produtos")
+//     }).catch((err)=>{
+//         req.flash("error_msg", "erro ao deletar produto")
+//         res.redirect("/produtos")
+//     })    
+// })
+// ////////////////
