@@ -148,7 +148,7 @@ app.get("/logout", (req, res)=>{
     });
 });
 
-app.get('/produtos', (req, res) => {
+app.get('/produtos',Logado,  (req, res) => {
     Produto.find().populate('categoria').sort({nome: 'desc'}).lean().then((produtos) => {
         res.render("produtos/produtos", {produtos: produtos});
     }).catch((err) => {
@@ -157,7 +157,7 @@ app.get('/produtos', (req, res) => {
     });
 });
 
-app.get("/produtos/add", (req, res) => {
+app.get("/produtos/add",Logado,  (req, res) => {
     Categoria.find().lean().then((categorias) => {
         res.render("produtos/addprodutos", { categorias: categorias });
     }).catch((err) => {
@@ -166,7 +166,7 @@ app.get("/produtos/add", (req, res) => {
     });
 });
 
-app.post("/produtos/novo", (req, res)=>{
+app.post("/produtos/novo",Logado,  (req, res)=>{
     var erros = []
     if(!req.body.nome || typeof req.body.nome == undefined ||req.body.nome == null){
         erros.push({ texto:"Nome inválido"})
@@ -194,7 +194,7 @@ app.post("/produtos/novo", (req, res)=>{
     }        
 })
 
-app.post("/produtos/edit",(req,res)=>{
+app.post("/produtos/edit",Logado, (req,res)=>{
     Produto.findOne({_id:req.body.id}).then((produto)=>{
         produto.nome = req.body.nome
         produto.descricao= req.body.descricao
@@ -212,7 +212,7 @@ app.post("/produtos/edit",(req,res)=>{
     })    
 })
 
-app.get("/produtos/edit/:id",(req,res)=>{
+app.get("/produtos/edit/:id",Logado, (req,res)=>{
     Produto.findOne({_id:req.params.id}).lean().then((produto)=>{
         Categoria.find().lean().then((categorias)=>{
             res.render('produtos/editprodutos', {categorias:categorias, produto:produto})
@@ -226,7 +226,7 @@ app.get("/produtos/edit/:id",(req,res)=>{
     })    
 })
 
-app.post("/produtos/deletar",(req,res)=>{   
+app.post("/produtos/deletar",Logado, (req,res)=>{   
     Produto.deleteOne({_id:req.body.id}).then(()=>{
         req.flash("success_msg", "deletado com sucesso")
         res.redirect("/produtos")
@@ -236,7 +236,7 @@ app.post("/produtos/deletar",(req,res)=>{
     })    
 })
 
-app.get('/categorias',(req, res)=>{
+app.get('/categorias',Logado, (req, res)=>{
     Categoria.find().sort({date:'desc'}).lean().then((categorias)=>{
         res.render("categorias/categorias", {categorias: categorias})
     }).catch((err)=>{
@@ -244,11 +244,11 @@ app.get('/categorias',(req, res)=>{
     })    
 })
 
-app.get('/categorias/add',(req, res)=>{
+app.get('/categorias/add',Logado, (req, res)=>{
     res.render("categorias/addcategorias")
 })
 
-app.post("/categorias/nova", (req, res)=>{
+app.post("/categorias/nova",Logado,  (req, res)=>{
     var erros = []
     if(!req.body.nome || typeof req.body.nome == undefined ||req.body.nome == null){
         erros.push({ texto:"Nome inválido"})
@@ -276,7 +276,7 @@ app.post("/categorias/nova", (req, res)=>{
     }    
 })
 
-app.get('/estoques', (req, res) => {
+app.get('/estoques', Logado, (req, res) => {
     Estoque.find({ retirado: 0 }).populate('produto').populate('recebedor').sort({dataE: 'desc'}).lean().then((estoques) => {
         res.render("estoques/estoques", {estoques: estoques});
     }).catch((err) => {
@@ -286,7 +286,7 @@ app.get('/estoques', (req, res) => {
     });
 });
 
-app.get('/retiradas', (req, res) => {
+app.get('/retiradas',Logado,  (req, res) => {
     Estoque.find({ retirado: 1 }).populate('produto').populate('recebedor').sort({dataE: 'desc'}).lean().then((estoques) => {
         res.render("estoques/retiradas", {estoques: estoques});
     }).catch((err) => {
@@ -298,7 +298,7 @@ app.get('/retiradas', (req, res) => {
 
 
 
-app.get("/estoques/add", (req, res) => {
+app.get("/estoques/add",Logado,  (req, res) => {
     Produto.find().lean().then((produtos) => {
         res.render("estoques/addestoque", { produtos: produtos });
     }).catch((err) => {
@@ -309,7 +309,7 @@ app.get("/estoques/add", (req, res) => {
 
 
 
-app.post("/estoques/novo", (req, res)=>{
+app.post("/estoques/novo",Logado,  (req, res)=>{
     var erros = []
     //não fiz validação de dados aqui, estas comentadas são de onde eu copiei esse codigo 
     // if(!req.body.nome || typeof req.body.nome == undefined ||req.body.nome == null){
@@ -341,7 +341,7 @@ app.post("/estoques/novo", (req, res)=>{
 })
 
 
-app.get("/estoques/edit/:id",(req,res)=>{
+app.get("/estoques/edit/:id",Logado, (req,res)=>{
     Estoque.findOne({_id:req.params.id}).lean().then((estoque)=>{
         Produto.find().lean().then((produtos)=>{
             res.render('estoques/editestoques', {produtos:produtos, estoque: estoque})
@@ -355,7 +355,7 @@ app.get("/estoques/edit/:id",(req,res)=>{
     })    
 })
 
-app.post("/estoques/edit",(req,res)=>{
+app.post("/estoques/edit",Logado, (req,res)=>{
     Estoque.findOne({_id:req.body.id}).then((estoque)=>{
         estoque.quantidade = req.body.quantidade
         estoque.observacoes= req.body.observacoes
@@ -376,7 +376,7 @@ app.post("/estoques/edit",(req,res)=>{
     })    
 })
 
-app.post("/retiradas/retirar",(req,res)=>{
+app.post("/retiradas/retirar",Logado, (req,res)=>{
     Estoque.findOne({_id:req.body.id}).then((estoque)=>{        
         estoque.dataS= Date.now(),        
         estoque.removedor = req.user ? req.user._id : null // ensure user is logged in
@@ -395,7 +395,7 @@ app.post("/retiradas/retirar",(req,res)=>{
     })    
 })
 
-app.post("/estoques/deletar",(req,res)=>{   
+app.post("/estoques/deletar",Logado, (req,res)=>{   
     Estoque.deleteOne({_id:req.body.id}).then(()=>{
         req.flash("success_msg", "deletado com sucesso")
         res.redirect("/produtos")
