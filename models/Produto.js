@@ -13,6 +13,11 @@ const Produto = new Schema({
     peso: {
         type: Number,
         require: true
+    },
+    categoria: {
+        type: Schema.Types.ObjectId,
+        ref: "categorias",
+        required: true
     }
 });
 

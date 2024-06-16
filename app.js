@@ -11,10 +11,13 @@ const passport = require("passport")
 require("./config/auth")(passport)
 require("./models/Usuario");
 require("./models/Produto")
+require("./models/Categoria")
 const Usuario = mongoose.model("usuarios");
 const Produto = mongoose.model("produtos")
+const Categoria = mongoose.model("categorias")
 const db = require("./config/db")
 const bcrypt = require("bcryptjs");
+
 
 
 
@@ -146,16 +149,36 @@ app.get("/logout", (req, res)=>{
 
 
 app.get('/produtos',(req, res)=>{
-    Produto.find().sort({date:'desc'}).lean().then((produtos)=>{
+    Produto.find().sort({nome:'desc'}).lean().then((produtos)=>{
         res.render("produtos/produtos", {produtos: produtos})
     }).catch((err)=>{
         req.flash("error_msg", "Houve um erro ao listar as categorias")
     })    
 })
 
-app.get('/produtos/add',(req, res)=>{
-    res.render("produtos/addprodutos")
-})
+app.get("/test", (req, res) => {
+    
+    console.log("aqui")
+    const testCategorias = [
+        { _id: '1', nome: 'Categoria 1' },
+        { _id: '2', nome: 'Categoria 2' }
+    ];
+    console.log(testCategorias)
+    res.render("produtos/addprodutos", { categorias: testCategorias });
+});
+
+
+app.get("/produtos/add", (req, res) => {
+    console.log("aqui")
+    Categoria.find().lean().then((categorias) => {
+        console.log(categorias)
+        res.render("produtos/addprodutos", { categorias: categorias });
+    }).catch((err) => {
+        req.flash("error_msg", "Erro ao carregar o formulário de adição de produtos");
+        res.redirect("/produtos");
+    });
+});
+
 
 app.post("/produtos/novo", (req, res)=>{
     var erros = []
@@ -174,7 +197,9 @@ app.post("/produtos/novo", (req, res)=>{
         const novoProduto = {
             nome: req.body.nome,
             peso: req.body.peso,
-            descricao: req.body.descricao
+            descricao: req.body.descricao,
+            categoria: req.body.categoria
+
         }    
         new Produto(novoProduto).save().then(()=>{
             req.flash("success_msg","produto salvo com sucesso")
@@ -227,7 +252,52 @@ app.post("/produtos/deletar",(req,res)=>{
 
 
 
-const PORT = process.env.PORT ||8081
+app.get('/categorias',(req, res)=>{
+    Categoria.find().sort({date:'desc'}).lean().then((categorias)=>{
+        res.render("categorias/categorias", {categorias: categorias})
+    }).catch((err)=>{
+        req.flash("error_msg", "Houve um erro ao listar as categorias")
+    })    
+})
+
+app.get('/categorias/add',(req, res)=>{
+    res.render("categorias/addcategorias")
+})
+
+app.post("/categorias/nova", (req, res)=>{
+    var erros = []
+    if(!req.body.nome || typeof req.body.nome == undefined ||req.body.nome == null){
+        erros.push({ texto:"Nome inválido"})
+    }    
+    
+    if(req.body.nome.length <2){
+        erros.push({ texto:"Nome da categoria muito curto"})
+    }
+
+    if(erros.length >0){
+        res.render("/addcategorias",{erros: erros})
+    }else{
+        const novaCategoria = {
+            nome: req.body.nome
+        }
+    
+        new Categoria(novaCategoria).save().then(()=>{
+            console.log("Categoria salva")
+            req.flash("success_msg","categoria criada com sucesso")
+            res.redirect("/categorias"); // Redirect to avoid re-submitting the form on refresh
+        }).catch((err)=>{
+            req.flash("error_msg","erro ao salvar categoria")
+            console.log("falha ao salvar categoria"+ err)
+            res.redirect("/");
+        })
+    }
+
+    
+})
+
+
+
+const PORT = process.env.PORT ||8089
 app.listen(PORT,()=>{
     console.log("Servidor rodando na porta " + PORT);
 })
