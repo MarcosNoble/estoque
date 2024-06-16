@@ -201,7 +201,7 @@ app.post("/produtos/edit",(req,res)=>{
     Produto.findOne({_id:req.body.id}).then((produto)=>{
         produto.nome = req.body.nome
         produto.descricao= req.body.descricao
-        // produto.peso = req.body.peso
+        produto.categoria = req.body.categoria
         produto.save().then(()=>{
             req.flash("success_msg", "Sucesso na edição")
             res.redirect("/produtos")
@@ -217,9 +217,14 @@ app.post("/produtos/edit",(req,res)=>{
 
 app.get("/produtos/edit/:id",(req,res)=>{
     Produto.findOne({_id:req.params.id}).lean().then((produto)=>{
-        res.render('produtos/editprodutos', {produto:produto})
+        Categoria.find().lean().then((categorias)=>{
+            res.render('produtos/editprodutos', {categorias:categorias, produto:produto})
+        }).catch((err)=>{
+            req.flash("error_msg", "erro ao listar categorias")
+            res.redirect("/admin/postagens") 
+        })
     }).catch((err)=>{
-        req.flash("error_msg", "esta produto não existe")
+        req.flash("error_msg", "erro ao listar produto ")
         res.redirect("/produtos")
     })    
 })
@@ -276,7 +281,7 @@ app.post("/categorias/nova", (req, res)=>{
 
 
 app.get('/estoques', (req, res) => {
-    Estoque.find().populate('produto','usuario').sort({dataE: 'desc'}).lean().then((estoques) => {
+    Estoque.find().populate('produto').populate('recebedor').sort({dataE: 'desc'}).lean().then((estoques) => {
         res.render("estoques/estoques", {estoques: estoques});
     }).catch((err) => {
         req.flash("error_msg", "Houve um erro ao listar os produtos");
@@ -307,7 +312,7 @@ app.post("/estoques/novo", (req, res)=>{
     //     erros.push({ texto:"Nome do produto muito curto"})
     // }
     if(erros.length >0){
-        res.render("produtos/addprodutos",{erros: erros})
+        res.render("/estoques",{erros: erros})
     }else {
         const novaEntrada = {
             produto: req.body.produto,
@@ -328,50 +333,54 @@ app.post("/estoques/novo", (req, res)=>{
     }        
 })
 
+
+app.get("/estoques/edit/:id",(req,res)=>{
+    Estoque.findOne({_id:req.params.id}).lean().then((estoque)=>{
+        Produto.find().lean().then((produtos)=>{
+            res.render('estoques/editestoques', {produtos:produtos, estoque: estoque})
+        }).catch((err)=>{
+            req.flash("error_msg", "erro ao listar categorias")
+            res.redirect("/estoques") 
+        })
+    }).catch((err)=>{
+        req.flash("error_msg", "esta produto não existe")
+        res.redirect("/estoques")
+    })    
+})
+
+app.post("/estoques/edit",(req,res)=>{
+    Estoque.findOne({_id:req.body.id}).then((estoque)=>{
+        estoque.quantidade = req.body.quantidade
+        estoque.observacoes= req.body.observacoes
+        estoque.dataV= req.body.dataV
+        estoque.produto= req.body.produto
+        estoque.recebedor = req.user ? req.user._id : null // ensure user is logged in
+        estoque.save().then(()=>{
+            req.flash("success_msg", "Sucesso na edição")
+            res.redirect("/estoques")
+        }).catch((err)=>{
+            res.flash("error_msg", "merda na edição")
+            res.redirect("/estoques")
+        })
+    }).catch((err)=>{
+        console.log(err)
+        req.flash("error_msg", "erro ao editar")
+        res.redirect("/estoques")
+    })    
+})
+
+app.post("/estoques/deletar",(req,res)=>{   
+    Estoque.deleteOne({_id:req.body.id}).then(()=>{
+        req.flash("success_msg", "deletado com sucesso")
+        res.redirect("/produtos")
+    }).catch((err)=>{
+        req.flash("error_msg", "erro ao deletar estoque")
+        res.redirect("/estoques")
+    })    
+})
+
 const PORT = process.env.PORT ||8089
 app.listen(PORT,()=>{
     console.log("Servidor rodando na porta " + PORT);
 })
 
-///////////////
-
-
-
-
-// app.post("/produtos/edit",(req,res)=>{
-//     Produto.findOne({_id:req.body.id}).then((produto)=>{
-//         produto.nome = req.body.nome
-//         produto.descricao= req.body.descricao
-//         // produto.peso = req.body.peso
-//         produto.save().then(()=>{
-//             req.flash("success_msg", "Sucesso na edição")
-//             res.redirect("/produtos")
-//         }).catch((err)=>{
-//             res.flash("error_msg", "merda na edição")
-//             res.redirect("/produtos")
-//         })
-//     }).catch((err)=>{
-//         req.flash("error_msg", "erro ao editar")
-//         res.redirect("/produtos")
-//     })    
-// })
-
-// app.get("/produtos/edit/:id",(req,res)=>{
-//     Produto.findOne({_id:req.params.id}).lean().then((produto)=>{
-//         res.render('produtos/editprodutos', {produto:produto})
-//     }).catch((err)=>{
-//         req.flash("error_msg", "esta produto não existe")
-//         res.redirect("/produtos")
-//     })    
-// })
-
-// app.post("/produtos/deletar",(req,res)=>{   
-//     Produto.deleteOne({_id:req.body.id}).then(()=>{
-//         req.flash("success_msg", "deletado com sucesso")
-//         res.redirect("/produtos")
-//     }).catch((err)=>{
-//         req.flash("error_msg", "erro ao deletar produto")
-//         res.redirect("/produtos")
-//     })    
-// })
-// ////////////////
