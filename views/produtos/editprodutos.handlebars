@@ -11,8 +11,8 @@
             <label for="nome">Nome</label>
                 <input  class="form-control" type="text" name="nome" id="nome" placeholder="Nome da categoria" value="{{produto.nome}}">
             <label for="descricao">Descrição: </label>
-                <input class="form-control" type="text" name="descricao" id="descricao" placeholder="Slug da categoria" value="{{produto.descricao}}">
-            <label for="categoria" class="mt-1">Categoria</label>
+                <input class="form-control" type="text" name="descricao" id="descricao" placeholder="" value="{{produto.descricao}}">
+            <label for="categoria" class="mt-1">Categoria original: {{produto.categoria.nome}}</label>
             <select name="categoria" class="form-select" >
                 {{#each categorias}}
                     <option value="{{_id}}">{{nome}}</option>
@@ -24,4 +24,3 @@
         </form>
     </div>
 </div>
-

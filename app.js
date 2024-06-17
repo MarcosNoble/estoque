@@ -21,9 +21,6 @@ const db = require("./config/db")
 const bcrypt = require("bcryptjs");
 const {Logado} = require("./helpers/Logado")
 
-
-
-
 //Configurações
 //sessão
     app.use(session({
@@ -31,10 +28,12 @@ const {Logado} = require("./helpers/Logado")
         resave: true,
         saveUninitialized: true
     }))
+
     //a ordem importa
     app.use(passport.initialize())
     app.use(passport.session())
     app.use(flash())
+
 //Middleware
     app.use((req,res,next)=>{
         res.locals.success_msg = req.flash("success_msg")
@@ -43,12 +42,15 @@ const {Logado} = require("./helpers/Logado")
         res.locals.user = req.user || null;
         next()
     })
+
 //Bodyparser
     app.use(bodyParser.urlencoded({extended:true}))
     app.use(bodyParser.json())
+
 //Handlebars
     app.engine('handlebars', engine({ defaultLayout: 'main' }));
     app.set('view engine', 'handlebars');
+
 //mongoose        
     mongoose.Promise = global.Promise;
     mongoose.connect(db.mongoURI, {
@@ -60,9 +62,7 @@ const {Logado} = require("./helpers/Logado")
 //public
     app.use(express.static(path.join(__dirname, "public")))
 
-
 //rotas
-//app.get('/',Logado, (req, res) => {
 app.get('/', (req, res) => {
     res.render('index')
 });
@@ -213,7 +213,7 @@ app.post("/produtos/edit",Logado, (req,res)=>{
 })
 
 app.get("/produtos/edit/:id",Logado, (req,res)=>{
-    Produto.findOne({_id:req.params.id}).lean().then((produto)=>{
+    Produto.findOne({_id:req.params.id}).populate('categoria').lean().then((produto)=>{
         Categoria.find().lean().then((categorias)=>{
             res.render('produtos/editprodutos', {categorias:categorias, produto:produto})
         }).catch((err)=>{
@@ -296,8 +296,6 @@ app.get('/retiradas',Logado,  (req, res) => {
     });
 });
 
-
-
 app.get("/estoques/add",Logado,  (req, res) => {
     Produto.find().lean().then((produtos) => {
         res.render("estoques/addestoque", { produtos: produtos });
@@ -306,8 +304,6 @@ app.get("/estoques/add",Logado,  (req, res) => {
         res.redirect("/estoques");
     });
 });
-
-
 
 app.post("/estoques/novo",Logado,  (req, res)=>{
     var erros = []
@@ -340,9 +336,8 @@ app.post("/estoques/novo",Logado,  (req, res)=>{
     }        
 })
 
-
 app.get("/estoques/edit/:id",Logado, (req,res)=>{
-    Estoque.findOne({_id:req.params.id}).lean().then((estoque)=>{
+    Estoque.findOne({_id:req.params.id}).populate('produto').lean().then((estoque)=>{
         Produto.find().lean().then((produtos)=>{
             res.render('estoques/editestoques', {produtos:produtos, estoque: estoque})
         }).catch((err)=>{
@@ -405,20 +400,99 @@ app.post("/estoques/deletar",Logado, (req,res)=>{
     })    
 })
 
+async function getQuantidadePorCategoria(retirado) {
+    return await Categoria.aggregate([
+        {
+            $lookup: {
+                from: 'produtos',
+                localField: '_id',
+                foreignField: 'categoria',
+                as: 'produtos'
+            }
+        },
+        {
+            $unwind: "$produtos"
+        },
+        {
+            $lookup: {
+                from: 'estoques',
+                localField: 'produtos._id',
+                foreignField: 'produto',
+                as: 'estoques'
+            }
+        },
+        {
+            $unwind: "$estoques"
+        },
+        {
+            $match: {
+                "estoques.retirado": retirado
+            }
+        },
+        {
+            $group: {
+                _id: "$_id",
+                nome: { $first: "$nome" },
+                quantidade: { $sum: 1 }
+            }
+        }
+    ]);
+}
+
+async function getQuantidadePorProduto(retirado) {
+    return await Estoque.aggregate([
+        {
+            $match: { retirado: retirado }
+        },
+        {
+            $group: {
+                _id: "$produto",
+                quantidade: { $sum: "$quantidade" }
+            }
+        },
+        {
+            $lookup: {
+                from: 'produtos',
+                localField: '_id',
+                foreignField: '_id',
+                as: 'produtoInfo'
+            }
+        },
+        {
+            $unwind: "$produtoInfo"
+        },
+        {
+            $project: {
+                nome: "$produtoInfo.nome",
+                quantidade: 1
+            }
+        }
+    ]);
+}
+
+app.get('/estatisticas', Logado, async (req, res) => {
+    try {
+        // Estatísticas para produtos no estoque (retirado = 0)
+        const quantidadePorCategoriaNoEstoque = await getQuantidadePorCategoria(0);
+        const quantidadePorProdutoNoEstoque = await getQuantidadePorProduto(0);
+        
+        // Estatísticas para produtos fora do estoque (retirado = 1)
+        const quantidadePorCategoriaForaEstoque = await getQuantidadePorCategoria(1);
+        const quantidadePorProdutoForaEstoque = await getQuantidadePorProduto(1);
+
+        res.render('estoques/estatisticas', {
+            quantidadePorCategoriaNoEstoque: quantidadePorCategoriaNoEstoque,
+            quantidadePorProdutoNoEstoque: quantidadePorProdutoNoEstoque,
+            quantidadePorCategoriaForaEstoque: quantidadePorCategoriaForaEstoque,
+            quantidadePorProdutoForaEstoque: quantidadePorProdutoForaEstoque
+        });
+    } catch (err) {
+        req.flash("error_msg", "Erro ao carregar as estatísticas");
+        res.redirect('/');
+    }
+});
+
 const PORT = process.env.PORT ||8089
 app.listen(PORT,()=>{
     console.log("Servidor rodando na porta " + PORT);
 })
-
-// document.addEventListener('DOMContentLoaded', (event) => {
-//     const deleteButton = document.querySelector('.btn-danger'); // Adjust the selector to your specific button
-
-//     deleteButton.addEventListener('click', function(e) {
-//         if (!this.hasAttribute('data-confirm')) {
-//             e.preventDefault(); // Prevent the form from submitting on first click
-//             this.setAttribute('data-confirm', 'true');
-//             this.textContent = 'Clique novamente para confirmar'; // Change the button text to prompt for a second click
-//         }
-//         // The form will submit on second click because 'data-confirm' attribute is now set
-//     });
-// });
