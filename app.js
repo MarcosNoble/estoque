@@ -147,6 +147,8 @@ app.get("/logout", (req, res)=>{
         res.redirect("/");
     });
 });
+/////
+//Produtos
 
 app.get('/produtos',Logado,  (req, res) => {
     Produto.find().populate('categoria').sort({nome: 'desc'}).lean().then((produtos) => {
@@ -193,7 +195,7 @@ app.post("/produtos/novo",Logado,  (req, res)=>{
         }).catch((err)=>{
             req.flash("error_msg","erro ao salvar produto")
             console.log("falha ao salvar produto"+ err)
-            res.redirect("/");
+            res.redirect("/produtos/add");
         })
     }        
 })
@@ -220,9 +222,7 @@ app.post("/produtos/edit",Logado, (req,res)=>{
         res.redirect("/produtos")
     }       
     
-})
-
-     
+})     
 
 app.get("/produtos/edit/:id",Logado, (req,res)=>{
     if(req.user.eAdmin == 1){
@@ -258,6 +258,8 @@ app.post("/produtos/deletar",Logado, (req,res)=>{
     }
 })
 
+///
+///Categorias
 app.get('/categorias',Logado, (req, res)=>{
     if(req.user.eAdmin == 1){
         Categoria.find().sort({date:'desc'}).lean().then((categorias)=>{
@@ -282,12 +284,10 @@ app.post("/categorias/nova",Logado,  (req, res)=>{
     var erros = []
     if(!req.body.nome || typeof req.body.nome == undefined ||req.body.nome == null){
         erros.push({ texto:"Nome inválido"})
-    }    
-    
+    }        
     if(req.body.nome.length <2){
         erros.push({ texto:"Nome da categoria muito curto"})
     }
-
     if(erros.length >0){
         res.render("/addcategorias",{erros: erros})
     }else{
@@ -305,7 +305,61 @@ app.post("/categorias/nova",Logado,  (req, res)=>{
         })
     }    
 })
+app.post("/categorias/edit",Logado, (req,res)=>{
+    if(req.user.eAdmin == 1){
+        Categoria.findOne({_id:req.body.id}).then((categoria)=>{
+            categoria.nome = req.body.nome
+            categoria.descricao= req.body.descricao
+            categoria.categoria = req.body.categoria
+            categoria.save().then(()=>{
+                req.flash("success_msg", "Sucesso na edição")
+                res.redirect("/categorias")
+            }).catch((err)=>{
+                res.flash("error_msg", "merda na edição")
+                res.redirect("/produtos")
+            })
+        }).catch((err)=>{
+            req.flash("error_msg", "erro ao editar")
+            res.redirect("/categorias")
+        })        
+    }else{
+        req.flash("error_msg", "Sómente admins podem editar")
+        res.redirect("/categorias")
+    }       
+    
+})     
 
+app.get("/categorias/edit/:id",Logado, (req,res)=>{
+    if(req.user.eAdmin == 1){
+        Categoria.findOne({_id:req.params.id}).lean().then((categoria)=>{           
+            res.render('categorias/editcategorias', {categoria:categoria})           
+        }).catch((err)=>{
+            req.flash("error_msg", "erro ao listar categorias ")
+            res.redirect("/categorias")
+        })    
+    }else{
+        req.flash("error_msg", "Sómente admins podem editar")
+        res.redirect("/categorias")
+    } 
+})
+
+app.post("/categorias/deletar",Logado, (req,res)=>{   
+    if(req.user.eAdmin == 1){
+        Categoria.deleteOne({_id:req.body.id}).then(()=>{
+            req.flash("success_msg", "Deletada com sucesso")
+            res.redirect("/categorias")
+        }).catch((err)=>{
+            req.flash("error_msg", "erro ao deletar categoria")
+            res.redirect("/categorias")
+        })    
+    }else{
+        req.flash("error_msg", "Sómente admins podem deletar")
+        res.redirect("/categorias")
+    }
+})
+
+/////////
+//estoques e retirdas
 app.get('/estoques', Logado, (req, res) => {
     if(req.user.eAdmin == 1){
         Estoque.find({ retirado: 0 }).populate('produto').populate('recebedor').sort({dataE: 'desc'}).lean().then((estoques) => {
@@ -366,6 +420,14 @@ app.post("/estoques/novo",Logado,  (req, res)=>{
     // if(req.body.nome.length <2){
     //     erros.push({ texto:"Nome do produto muito curto"})
     // }
+    if(!req.body.nome || typeof req.body.nome == undefined ||req.body.nome == null){
+        erros.push({ texto:"Nome inválido"})
+    }    
+    
+    if(req.body.nome.length <2){
+        erros.push({ texto:"Nome da categoria muito curto"})
+    }
+
     if(erros.length >0){
         res.render("/estoques",{erros: erros})
     }else {
@@ -403,7 +465,7 @@ app.get("/estoques/edit/:id",Logado, (req,res)=>{
         })    
     }else{
         req.flash("error_msg", "Sómente admins podem editar")
-        res.redirect("/produtos")
+        res.redirect("/estoques")
     } 
 })
 
