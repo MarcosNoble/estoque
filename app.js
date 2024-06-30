@@ -456,7 +456,7 @@ app.get("/estoques/edit/:id",Logado, (req,res)=>{
             Produto.find().lean().then((produtos)=>{
                 res.render('estoques/editestoques', {produtos:produtos, estoque: estoque})
             }).catch((err)=>{
-                req.flash("error_msg", "erro ao listar categorias")
+                req.flash("error_msg", "erro ao listar produtos")
                 res.redirect("/estoques") 
             })
         }).catch((err)=>{
@@ -512,6 +512,63 @@ app.post("/retiradas/retirar",Logado, (req,res)=>{
         req.flash("error_msg", "erro ao editar")
         res.redirect("/estoques")
     })    
+})
+
+app.get("/retiradas/retirarparcial/:id",Logado, (req,res)=>{
+    if(req.user.eAdmin == 1){
+        Estoque.findOne({_id:req.params.id}).populate('produto').lean().then((estoque)=>{
+            console.log(estoque)
+            res.render('estoques/retiradaparcial', {estoque: estoque})
+        }).catch((err)=>{
+            req.flash("error_msg", "esta entrada não existe")
+            res.redirect("/estoques")
+        })    
+    }else{
+        req.flash("error_msg", "Sómente admins podem editar")
+        res.redirect("/estoques")
+    } 
+ 
+})
+
+app.post("/retiradas/retirarparcial",Logado, (req,res)=>{
+    if(req.user.eAdmin == 1){
+        Estoque.findOne({_id:req.body.id}).then((estoque)=>{
+            estoque.quantidade =  estoque.quantidade - req.body.quantidade            
+            estoque.save().catch((err)=>{
+                res.flash("error_msg", "problema na retirada parcial")
+                res.redirect("/estoques")
+            })
+            const novaSaida = {
+                produto: estoque.produto,
+                quantidade: req.body.quantidade,
+                dataE: estoque.dataE,
+                dataS: Date.now(),
+                observacoes: estoque.observacoes,
+                dataV: estoque.dataV,
+                recebedor: estoque.recebedor,
+                removedor: req.user ? req.user._id : null, // ensure user is logged in
+                retirado: 1
+                
+            };    
+            new Estoque(novaSaida).save().then(() => {
+                req.flash("success_msg", "retirada salva com sucesso");
+                res.redirect("/estoques"); // Redirect to avoid re-submitting the form on refresh
+            }).catch((err) => {
+                req.flash("error_msg", "erro ao salvar retirada");
+                console.log("falha ao salvar retirada"+ err);
+                res.redirect("/");
+            });
+        }).catch((err)=>{
+            console.log(err)
+            req.flash("error_msg", "erro na retirada parcial")
+            res.redirect("/estoques")
+        })            
+    }else{
+        req.flash("error_msg", "Sómente admins podem editar")
+        res.redirect("/produtos")
+    } 
+    
+ 
 })
 
 app.post("/estoques/deletar",Logado, (req,res)=>{   
