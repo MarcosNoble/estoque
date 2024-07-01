@@ -12,10 +12,10 @@
         <li class="nav-item">
           <a class="nav-link" href="/categorias">Categorias</a>
         </li> 
-        {{#if user}} 
+        {{#if user}}
           <li class="nav-item">
             <a class="nav-link active" href="/logout">Logout</a>
-          </li>      
+          </li>
         {{else}}
           <li class="nav-item">
             <a class="nav-link active" href="/login">Login</a>
@@ -23,8 +23,14 @@
           <li class="nav-item">
             <a class="nav-link active" href="/registro">Registro</a>
           </li>
-        {{/if}} 
-      </ul>      
+        {{/if}}
+      </ul>
+      {{#if user}}
+        <div class="navbar-text d-flex align-items-center">
+          <i class="bi bi-person-circle" style="font-size: 1.5em;"></i>
+          <span class="ms-2">Usuário: {{userInitials}}</span>
+        </div>
+      {{/if}}
     </div>
   </div>
 </nav>

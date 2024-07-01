@@ -43,6 +43,17 @@ const {Logado} = require("./helpers/Logado")
         next()
     })
 
+    app.use((req, res, next) => {
+        if (req.user) {
+          // Supondo que o nome completo do usuário está em req.user.name
+          const nome = req.user.nome;
+          const initials = nome.split(' ').map(n => n[0]).join('').toUpperCase();
+          res.locals.user = req.user;
+          res.locals.userInitials = initials;
+        }
+        next();
+      });
+
 //Bodyparser
     app.use(bodyParser.urlencoded({extended:true}))
     app.use(bodyParser.json())
