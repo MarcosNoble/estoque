@@ -431,12 +431,15 @@ app.post("/estoques/novo",Logado,  (req, res)=>{
     // if(req.body.nome.length <2){
     //     erros.push({ texto:"Nome do produto muito curto"})
     // }
-    if(!req.body.nome || typeof req.body.nome == undefined ||req.body.nome == null){
-        erros.push({ texto:"Nome inválido"})
+    if(!req.body.quantidade || typeof req.body.quantidade == undefined ||req.body.quantidade == null){
+        erros.push({ texto:"Quantidade errada"})
     }    
     
-    if(req.body.nome.length <2){
-        erros.push({ texto:"Nome da categoria muito curto"})
+    if(req.body.observacoes.length <1){
+        erros.push({ texto:"Observação vazia"})
+    }
+    if(!req.body.produto){
+        erros.push({ texto:"Selecione um produto"})
     }
 
     if(erros.length >0){
