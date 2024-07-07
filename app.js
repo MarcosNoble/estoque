@@ -52,7 +52,17 @@ const {Logado} = require("./helpers/Logado")
           res.locals.userInitials = initials;
         }
         next();
-      });
+    });
+
+    // app.use((req, res, next) => {
+    //     res.status(404).render('index', { message: 'Página não encontrada' });
+    // });
+
+    // // Middleware de erro genérico
+    // app.use((err, req, res, next) => {
+    //     console.error(err.stack);
+    //     res.status(500).render('index', { message: 'Erro interno do servidor' });
+    // });
 
 //Bodyparser
     app.use(bodyParser.urlencoded({extended:true}))
@@ -692,6 +702,18 @@ app.get('/estatisticas', Logado, async (req, res) => {
     }
 });
 
+app.get('/users',Logado,  (req, res) => {
+    Usuario.find().sort({nome: 'desc'}).lean().then((usuarios) => {
+        if(req.user.eAdmin == 1){
+            res.render("usuarios/users", {usuarios: usuarios});
+        }else{
+            res.render("usuarios/usersusers", {usuarios: usuarios});
+        }        
+    }).catch((err) => {
+        req.flash("error_msg", "Houve um erro ao listar os produtos");
+        res.redirect('/');
+    });
+});
 
 const PORT = process.env.PORT ||8089
 app.listen(PORT,()=>{
