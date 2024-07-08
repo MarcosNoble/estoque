@@ -10,12 +10,12 @@
             <h4>Nome: {{nome}}</h4>
             <small>E-mail: {{email}}</small>   <br>                     
             <small>Categoria: {{eAdmin}}</small> <br>
-            <a href="/produtos/edit/{{_id}}" class="d-inline">
-                <button class="btn btn-success mt-2">Editar produto</button>
+            <a href="/users/edit/{{_id}}" class="d-inline">
+                <button class="btn btn-success mt-2">Toggle admin status</button>
             </a>           
-            <form action="/produtos/deletar" method="POST" class="d-inline">
+            <form action="/users/deletar" method="POST" class="d-inline">
                 <input type="hidden" name="id" value="{{_id}}">
-                <button type="submit" class="btn btn-danger mt-2"> Deletar Produto</button>
+                <button type="submit" class="btn btn-danger mt-2"> Deletar usuario</button>
             </form>
             
         </div>

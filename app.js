@@ -231,7 +231,7 @@ app.post("/produtos/edit",Logado, (req,res)=>{
                 req.flash("success_msg", "Sucesso na edição")
                 res.redirect("/produtos")
             }).catch((err)=>{
-                res.flash("error_msg", "merda na edição")
+                res.flash("error_msg", "Problema na edição")
                 res.redirect("/produtos")
             })
         }).catch((err)=>{
@@ -336,7 +336,7 @@ app.post("/categorias/edit",Logado, (req,res)=>{
                 req.flash("success_msg", "Sucesso na edição")
                 res.redirect("/categorias")
             }).catch((err)=>{
-                res.flash("error_msg", "merda na edição")
+                res.flash("error_msg", "Problema na edição")
                 res.redirect("/produtos")
             })
         }).catch((err)=>{
@@ -505,7 +505,7 @@ app.post("/estoques/edit",Logado, (req,res)=>{
                 req.flash("success_msg", "Sucesso na edição")
                 res.redirect("/estoques")
             }).catch((err)=>{
-                res.flash("error_msg", "merda na edição")
+                res.flash("error_msg", "Problema na edição")
                 res.redirect("/estoques")
             })
         }).catch((err)=>{
@@ -528,7 +528,7 @@ app.post("/retiradas/retirar",Logado, (req,res)=>{
             req.flash("success_msg", "Sucesso na edição")
             res.redirect("/estoques")
         }).catch((err)=>{
-            res.flash("error_msg", "merda na edição")
+            res.flash("error_msg", "Problema na edição")
             res.redirect("/estoques")
         })
     }).catch((err)=>{
@@ -715,7 +715,47 @@ app.get('/users',Logado,  (req, res) => {
     });
 });
 
-const PORT = process.env.PORT ||8089
+app.get("/users/edit/:id",Logado, (req,res)=>{
+    if(req.user.eAdmin == 1){
+        Usuario.findOne({_id:req.params.id}).lean().then((user)=>{
+            if(user.eAdmin == 0 ){
+                user.eAdmin = 1
+            }else{
+                user.eAdmin = 0
+            }
+            user.save().then(()=>{
+                req.flash("success_msg", "Sucesso na edição")
+                res.redirect("/users")
+            }).catch((err)=>{
+                res.flash("error_msg", "Problema na edição")
+                res.redirect("/users")
+            })
+        }).catch((err)=>{
+            req.flash("error_msg", "esta produto não existe")
+            res.redirect("/users")
+        })    
+    }else{
+        req.flash("error_msg", "Sómente admins podem editar")
+        res.redirect("/users")
+    } 
+})
+
+app.post("/users/deletar",Logado, (req,res)=>{   
+    if(req.user.eAdmin == 1){
+        Usuario.deleteOne({_id:req.body.id}).then(()=>{
+            req.flash("success_msg", "deletado com sucesso")
+            res.redirect("/users")
+        }).catch((err)=>{
+            req.flash("error_msg", "erro ao deletar estoque")
+            res.redirect("/users")
+        })
+    }else{
+        req.flash("error_msg", "Sómente admins podem deletar")
+        res.redirect("/users")
+    } 
+})
+
+const PORT = process.env.PORT || 8089
 app.listen(PORT,()=>{
     console.log("Servidor rodando na porta " + PORT);
 })
