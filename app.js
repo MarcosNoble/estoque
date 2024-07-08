@@ -717,7 +717,7 @@ app.get('/users',Logado,  (req, res) => {
 
 app.get("/users/edit/:id",Logado, (req,res)=>{
     if(req.user.eAdmin == 1){
-        Usuario.findOne({_id:req.params.id}).lean().then((user)=>{
+        Usuario.findOne({_id:req.params.id}).then((user)=>{
             if(user.eAdmin == 0 ){
                 user.eAdmin = 1
             }else{
@@ -731,7 +731,7 @@ app.get("/users/edit/:id",Logado, (req,res)=>{
                 res.redirect("/users")
             })
         }).catch((err)=>{
-            req.flash("error_msg", "esta produto não existe")
+            req.flash("error_msg", "erro ao editar admin status")
             res.redirect("/users")
         })    
     }else{
