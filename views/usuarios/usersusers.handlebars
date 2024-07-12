@@ -1,15 +1,12 @@
 <h2>Lista de Usuarios</h2>
 <hr>
-<a href="/produtos/add">
-    <button class="btn btn-success">Novo produto</button>
-</a>
 
 {{#each usuarios}}
-    <div class="card mt-4">
+    <div class="card mt-4 {{getClassByAdminStatus eAdmin}}">
         <div class="card-body">
             <h4>Nome: {{nome}}</h4>
             <small>E-mail: {{email}}</small>   <br>                     
-            <small>Categoria: {{eAdmin}}</small> <br>
+            <small>Admin status: {{eAdmin}}</small> <br>
         </div>
     </div>
 {{else}}

@@ -54,6 +54,9 @@ const {Logado} = require("./helpers/Logado")
         next();
     });
 
+    ////???////???
+    app.use(express.static('public'));
+
     // app.use((req, res, next) => {
     //     res.status(404).render('index', { message: 'Página não encontrada' });
     // });
@@ -68,9 +71,24 @@ const {Logado} = require("./helpers/Logado")
     app.use(bodyParser.urlencoded({extended:true}))
     app.use(bodyParser.json())
 
-//Handlebars
-    app.engine('handlebars', engine({ defaultLayout: 'main' }));
-    app.set('view engine', 'handlebars');
+// //Handlebars
+
+//     app.engine('handlebars', engine({ defaultLayout: 'main' }));
+//     app.set('view engine', 'handlebars');
+
+app.engine('handlebars', engine({
+    defaultLayout: 'main',
+    helpers: {
+        getClassByAdminStatus: function(eAdmin) {
+            if (eAdmin === 1) {
+                return 'alert-danger'; // Vermelho para admins
+            } else {
+                return 'alert-success'; // Verde para usuários comuns
+            }
+        }
+    }
+}));
+app.set('view engine', 'handlebars');
 
 //mongoose        
     mongoose.Promise = global.Promise;
